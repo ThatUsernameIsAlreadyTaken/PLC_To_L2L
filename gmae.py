@@ -276,16 +276,12 @@ while x == 1:
         print(starttime)
         time.sleep(pause_time)
         endtime = datetime.now().strftime(DATETIME_SECONDS_STRING_FORMAT)
-        # this is where your number code needs to be
-        '''
         for line in lineList:
-            #linedict[line].sendem(starttime, endtime, True)
-            print(linedict[line].name)
             if linedict[line].scrapMachines:
-                linedict[line].mmaths()
-                print(linedict[line].machine)
-        '''
-        linedict['L2'].sendem(starttime, endtime)
+                linedict[line].msend(starttime,endtime)
+            else:
+                linedict[line].sendem(startime,endtime)
+                
         starttime = endtime
         firstPass = False
     #except:
