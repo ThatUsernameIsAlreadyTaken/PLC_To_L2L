@@ -6,6 +6,7 @@ import xlrd                    # module to interface with excel
 import requests                # module to upload the data to L2L
 from datetime import datetime  # module for time stamps
 import time
+import base64
 
 file_location = "C:/Users/QABRFPLC/Desktop/L2L_Numbers.xlsm"  # location of excel file on local computer
 workbook = xlrd.open_workbook(file_location)
@@ -17,7 +18,7 @@ enable_proxies = sheet.cell_value(1, 5)
 proxy_username = sheet.cell_value(1, 6)
 proxy_password = sheet.cell_value(1, 7)
 proxy_ip = sheet.cell_value(1, 8)
-proxies = {'https': 'https://' + str(proxy_username) + ':' + str(proxy_password) + '@' + str(proxy_ip)}
+proxies = {'https': 'https://' + str(proxy_username) + ':' + str(base64.b64decode(proxy_password)) + '@' + str(proxy_ip)}
 Api_End_Point = 'https://' + server + '.leading2lean.com/api/1.0/pitchdetails/record_details/'
 Scrap_End_Point = 'https://' + server + '.leading2lean.com/api/1.0/scrapdetail/add_scrap_detail/'
 url = Api_End_Point + "?auth=" + API_key
@@ -52,7 +53,6 @@ class Line:
 
     def zero(self):
         self.oldloga = 0
-
         self.oldlogb = 0
         self.oldend = 0
 
@@ -148,6 +148,11 @@ class Machine(Line):  # TODO write number force to zero function
         self.sendflamer = 0
         self.sendleak = 0
         self.sendvision = 0
+        self.wheelscrapold = 0
+        self.trimerscrapold = 0
+        self.flamerscrapold = 0
+        self.leakscrapold = 0
+        self.visionscrapold = 0
         self.machine = {}
         self.machinelist = []
         for m in range(12, 17):
@@ -156,10 +161,28 @@ class Machine(Line):  # TODO write number force to zero function
 
     def mzero(self):
         self.zero()
+        self.trimerin = 0
+        self.flamerin = 0
+        self.leakin = 0
+        self.visionin = 0
         self.trimerinold = 0
         self.flamerinold = 0
         self.leakinold = 0
         self.visioninold = 0
+        self.trimerin = 0
+        self.flamerin = 0
+        self.leakin = 0
+        self.visionin = 0
+        self.wheelscrap = 0
+        self.wheelscrapold = 0
+        self.trimerscrap = 0
+        self.trimerscrapold = 0
+        self.flamerscrap = 0
+        self.flamerscrapold = 0
+        self.leakscrap = 0
+        self.leakscrapold = 0
+        self.visionscrap = 0
+        self.visionscrapold = 0
 
     def mget(self):
         workbook = xlrd.open_workbook(file_location)
@@ -174,22 +197,24 @@ class Machine(Line):  # TODO write number force to zero function
         self.leakscrap = self.leakin - self.visionin
         self.visionscrap = self.visionin - self.end
 
-    def mmaths(self):
+    def mmaths(self):  # This doesnt send correct scrap counts
         self.mget()
         if firstPass:
-            self.trimerinold = self.trimerin
-            self.flamerinold = self.flamerin
-            self.leakinold = self.leakin
-            self.visioninold = self.visionin
-        print(self.loga, self.trimerin)
-        print(self.oldloga, self.trimerinold)
-        print(self.oldloga - self.trimerinold)
+            #self.trimerinold = self.trimerin
+            #self.flamerinold = self.flamerin
+            #self.leakinold = self.leakin
+            #self.visioninold = self.visionin
+            self.wheelscrapold = self.wheelscrap
+            self.trimerscrapold = self.trimerscrap
+            self.flamerscrapold = self.flamerscrap
+            self.leakscrapold = self.leakscrap
+            self.visionscrapold = self.visionscrap
 
-        self.sendwheel = ((self.loga + self.logb) - self.trimerin) - ((self.oldloga + self.oldlogb) - self.trimerinold)
-        self.sendtrimer = (self.trimerin - self.flamerin) - (self.trimerinold - self.flamerinold)
-        self.sendflamer = (self.flamerin - self.leakin) - (self.flamerinold - self.leakinold)
-        self.sendleak = (self.leakin - self.visionin) - (self.leakinold - self.visioninold)
-        self.sendvision = (self.visionin - self.end) - (self.visioninold - self.oldend)
+        self.sendwheel = self.wheelscrap - self.wheelscrapold
+        self.sendtrimer = self.trimerscrap - self.trimerscrapold
+        self.sendflamer = self.flamerscrap - self.flamerscrapold
+        self.sendleak = self.leakscrap - self.leakscrapold
+        self.sendvision = self.visionscrap - self.visionscrapold
 
         # TODO write auto-grab of scrap categories
         self.machine = {
@@ -220,18 +245,19 @@ class Machine(Line):  # TODO write number force to zero function
                 self.response = self.response.json().get("success")
                 if i == 0 and self.response:
                     print(self.name + ' Wheel good')
-                    self.trimerinold = self.trimerin
+                    self.wheelscrapold = self.wheelscrap
                 if i == 1 and self.response:
                     print(self.name + ' Trim good')
-                    self.flamerinold = self.flamerin
+                    self.trimerscrapold = self.trimerscrap
                 if i == 2 and self.response:
                     print(self.name + ' Flamer good')
-                    self.leakinold = self.leakin
+                    self.flamerscrapold = self.flamerscrap
                 if machines == 'Leak' and self.response:
                     print(self.name + ' Leak good')
-                    self.visioninold = self.visionin
+                    self.leakscrapold = self.leakscrap
                 if machines == 'Vision' and self.response:
                     print(self.name + ' Vision good')
+                    self.visionscrapold = self.visionscrap
                 i += 1
             except Exception as e:
                 print(e)
@@ -250,9 +276,20 @@ for i in range(sheet.nrows):  # init lines and info in excel sheet
         else:
             linedict[sheet.cell_value(i, 1)] = Line(sheet.cell_value(i, 0), i)
 
+
 x = 1
 while x == 1:
     while True:
+        l2 = [
+            linedict['L2'].trimerin,
+            linedict['L2'].trimerinold,
+            linedict['L2'].trimerscrap,
+            linedict['L2'].trimerscrapold,
+            linedict['L2'].flamerin,
+            linedict['L2'].flamerinold,
+            linedict['L2'].flamerscrap,
+            linedict['L2'].flamerscrapold,
+        ]
     #try:
         secs = datetime.now().strftime("%S")
         mins = datetime.now().strftime("%M")
@@ -260,7 +297,7 @@ while x == 1:
         if int(hours) == 18 or int(hours) == 6:
             if int(mins) == 30:
                 for a in lineList:  # runs through list of lines for repeated action instead of writing them out
-                    if "Machine" in str(a.__class__):
+                    if "Machine" in str(linedict[a].__class__):
                         linedict[a].mzero()
                     else:
                         linedict[a].zero()
@@ -276,13 +313,18 @@ while x == 1:
         print(starttime)
         time.sleep(pause_time)
         endtime = datetime.now().strftime(DATETIME_SECONDS_STRING_FORMAT)
+        '''
         for line in lineList:
-            if linedict[line].scrapMachines:
-                linedict[line].msend(starttime,endtime)
+            #linedict[line].sendem(starttime, endtime)
+            print(linedict[line].name)
+            if linedict[line].scrap_machines:
+                linedict[line].msend(starttime, endtime)
             else:
-                linedict[line].sendem(startime,endtime)
-                
+                linedict[line].sendem(starttime, endtime)
+        '''
+        #linedict['L2'].sendem(starttime, endtime)
+        linedict['L2'].msend(starttime, endtime)
         starttime = endtime
         firstPass = False
-    #except:
-        #pass
+    #except Exception as e:
+        #print(e)
