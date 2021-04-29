@@ -52,9 +52,13 @@ class Line:
         self.getnew()
 
     def zero(self):
+        print("line class zero called")
         self.oldloga = 0
         self.oldlogb = 0
         self.oldend = 0
+        self.loga = 0
+        self.logb = 0
+        self.end = 0
 
     def getnew(self):
         workbook = xlrd.open_workbook(file_location)
